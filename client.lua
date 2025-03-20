@@ -30,7 +30,7 @@ Citizen.CreateThread(function()
                         local ped = GetPedInVehicleSeat(vehicle, i)
                         if (
                             DoesEntityExist(ped) and
-                            (not NetworkGetEntityIsNetworked(vehicle) or NetworkHasControlOfEntity(vehicle))
+                            (not NetworkGetEntityIsNetworked(ped) or NetworkHasControlOfEntity(ped))
                         ) then
                             SetEntityAsMissionEntity(ped, true, true)
                             DeletePed(ped)

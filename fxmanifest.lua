@@ -4,7 +4,7 @@ rdr3_warning "I acknowledge that this is a prerelease build of RedM, and I am aw
 lua54 "yes"
 
 author "Sarbatore"
-description "Fix bugged drafts in RedM"
+description "Fix bugged drafts"
 
 client_scripts {
     "client.lua",
