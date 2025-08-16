@@ -6,16 +6,12 @@ function IsAnyDraftHorseWalking(vehicle)
     if (harnessCount > 0) then
         for i = 0, harnessCount - 1 do
             local horse = GetPedInDraftHarness(vehicle, i)
-            if (not DoesEntityExist(horse)) then
-                goto continue
+            if (DoesEntityExist(horse)) then
+                local speed = Absf(select(3, GetPedCurrentMoveBlendRatio(horse)))
+                if (speed > 0.9) then
+                    return true
+                end
             end
-
-            local speed = select(3, GetPedCurrentMoveBlendRatio(horse))
-            if (not IsMoveBlendRatioStill(speed)) then
-                return true
-            end
-
-            ::continue::
         end
     end
 
@@ -25,15 +21,8 @@ end
 ---Return whether the draft vehicle is bugged
 ---@param vehicle number
 ---@return boolean
-function IsDraftBugged(vehicle)
+function IsDraftVehicleBugged(vehicle)
     return (IsVehicleStopped(vehicle) and IsAnyDraftHorseWalking(vehicle))
-end
-
----Return whether the entity is controllable
----@param entity number
----@return boolean
-function IsEntityControllable(entity)
-    return (not NetworkGetEntityIsNetworked(entity) or NetworkHasControlOfEntity(entity))
 end
 
 ---Delete a the ped in a vehicle seat
@@ -41,20 +30,18 @@ end
 ---@param seat number
 function DeletePedInVehicleSeat(vehicle, seat)
     local ped = GetPedInVehicleSeat(vehicle, seat)
-    if (not DoesEntityExist(ped) or not IsEntityControllable(ped)) then return end
-    SetEntityAsMissionEntity(ped, true, true)
-    DeletePed(ped)
+    if (DoesEntityExist(ped)) then
+        NetworkRequestControlOfEntity(ped)
+        SetEntityAsMissionEntity(ped, true, true)
+        DeletePed(ped)
+    end
 end
 
 ---Delete a vehicle and its passengers
 ---@param vehicle number
 function DeleteVehicle_2(vehicle)
-    -- Delete driver
-    DeletePedInVehicleSeat(vehicle, -1)
-                    
     local seatCount = GetVehicleModelNumberOfSeats(GetEntityModel(vehicle))
     if (seatCount > 0) then
-        -- Delete all passengers
         for i = 0, seatCount - 1 do
             DeletePedInVehicleSeat(vehicle, i)
 
@@ -64,27 +51,31 @@ function DeleteVehicle_2(vehicle)
         end
     end
 
-    -- Delete vehicle
+    NetworkRequestControlOfEntity(vehicle)
     SetEntityAsMissionEntity(vehicle, true, true)
     DeleteVehicle(vehicle)
 end
 
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Citizen.Wait(3000)
-        
-        local vehicles = GetGamePool("CVehicle")
-        if (#vehicles == 0) then
-            goto continue
-        end
+        local itemSet = CreateItemset(true)
+        local numVehicles = GetEntitiesNearPoint(GetEntityCoords(PlayerPedId()), 50.0, itemSet, 2, Citizen.ResultAsInteger())
 
-        for i = 1, #vehicles do
-            local vehicle = vehicles[i]
-            if (IsDraftVehicle(vehicle) and IsEntityControllable(vehicle) and IsDraftBugged(vehicle)) then
-                DeleteVehicle_2(vehicle)
+        if (numVehicles > 0) then
+            for i = 0, numVehicles - 1 do
+                local itemsetItem = GetIndexedItemInItemset(i, itemSet)
+                local vehicle = GetEntityFromItem(itemsetItem)
+
+                if (DoesEntityExist(vehicle) and IsDraftVehicle(vehicle) and IsDraftVehicleBugged(vehicle)) then
+                    DeleteVehicle_2(vehicle)
+                end
             end
         end
 
-        ::continue::
+        if (IsItemsetValid(itemSet)) then
+            DestroyItemset(itemSet)
+        end
+
+        Wait(5000)
     end
 end)
