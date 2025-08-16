@@ -18,6 +18,10 @@ function IsAnyDraftHorseWalking(vehicle)
     return false
 end
 
+function IsDraftVehicle(vehicle)
+    return Citizen.InvokeNative(0xEA44E97849E9F3DD, vehicle)
+end
+
 ---Return whether the draft vehicle is bugged
 ---@param vehicle number
 ---@return boolean
