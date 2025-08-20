@@ -34,7 +34,7 @@ end
 ---@param seat number
 function DeletePedInVehicleSeat(vehicle, seat)
     local ped = GetPedInVehicleSeat(vehicle, seat)
-    if (DoesEntityExist(ped)) then
+    if (DoesEntityExist(ped) and not IsPedAPlayer(ped)) then
         NetworkRequestControlOfEntity(ped)
         SetEntityAsMissionEntity(ped, true, true)
         DeletePed(ped)
@@ -43,10 +43,10 @@ end
 
 ---Delete a vehicle and its passengers
 ---@param vehicle number
-function DeleteVehicle_2(vehicle)
+function DeleteVehicleAndPeds(vehicle)
     local seatCount = GetVehicleModelNumberOfSeats(GetEntityModel(vehicle))
     if (seatCount > 0) then
-        for i = 0, seatCount - 1 do
+        for i = -1, seatCount - 2 do
             DeletePedInVehicleSeat(vehicle, i)
 
             if (GetVehicleNumberOfPassengers(vehicle) == 0) then
@@ -71,7 +71,7 @@ CreateThread(function()
                 local vehicle = GetEntityFromItem(itemsetItem)
 
                 if (DoesEntityExist(vehicle) and IsDraftVehicle(vehicle) and IsDraftVehicleBugged(vehicle)) then
-                    DeleteVehicle_2(vehicle)
+                    DeleteVehicleAndPeds(vehicle)
                 end
             end
         end
